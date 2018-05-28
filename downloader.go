@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"io"
 	h "net/http"
+	"os"
 
-	"golang.org/x/tools/godoc/vfs"
+	"github.com/spf13/afero"
 )
 
 type BarSeeker struct {
@@ -17,7 +18,7 @@ type downloader struct {
 	barWr  io.Writer
 	barSk  *BarSeeker
 	client *h.Client
-	fs     vfs.FileSystem
+	fs     afero.Fs
 }
 
 func (m *downloader) download(dest io.WriteCloser,
@@ -50,7 +51,8 @@ func (m *downloader) storer(path string) (dest io.WriteCloser,
 	if e == nil {
 		offset = uint64(fi.Size())
 		if offset != 0 {
-			dest, e = m.fs.Open(path) //open for appending
+			// open for appending
+			dest, e = m.fs.OpenFile(path, 0644, os.O_APPEND|os.O_WRONLY)
 		} else {
 			dest, e = m.fs.Create(path)
 		}

@@ -1,6 +1,7 @@
 package miyam
 
 import (
+	"io/ioutil"
 	h "net/http"
 	"regexp"
 )
@@ -26,21 +27,44 @@ func (s *siteExtractor) match(url string) (ok bool) {
 	return
 }
 
-func (s *siteExtractor) extract(url string) (v *videoInfo, e error) {
-
-	var fv []string
-	fv, e = s.infoF.filter(url)
+func (s *siteExtractor) extract(url string) (v *videoInfo,
+	e error) {
+	v = new(videoInfo)
+	var ss []string
+	ss, e = s.titleP.proc(s.client, url)
 	if e == nil {
-		v = new(videoInfo)
-		if len(fv) == 0 {
-			e = NoTitleFound(url)
-		} else if len(fv) == 1 {
-			e = NoURLFound(url)
+		if len(ss) == 1 {
+			v.title = ss[0]
 		} else {
-			v.title, v.urls = fv[0], fv[1:]
+			e = NoTitleFound(url)
 		}
 	}
+	v.urls, e = s.urlP.proc(s.client, url)
 	return
 }
 
-func (s *siteExtractor) proc()
+type htmlProc struct {
+	rs []*regexp.Regexp
+}
+
+func (p *htmlProc) proc(c *h.Client, url string) (us []string,
+	e error) {
+	var r *h.Response
+	r, e = c.Get(url)
+	var bs []byte
+	if e == nil {
+		bs, e = ioutil.ReadAll(r.Body)
+	}
+	if e == nil {
+		html := string(bs)
+		i, ok := 0, false
+		us = make([]string, 0)
+		for !ok && i != len(p.rs) {
+			ss := p.rs[i].FindStringSubmatch(html)
+			ok = ss != nil
+			if o
+		}
+
+	}
+	return
+}
