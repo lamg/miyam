@@ -62,9 +62,46 @@ func (p *htmlProc) proc(c *h.Client, url string) (us []string,
 		for !ok && i != len(p.rs) {
 			ss := p.rs[i].FindStringSubmatch(html)
 			ok = ss != nil
-			if o
+			if ok {
+
+			}
 		}
 
 	}
 	return
 }
+
+/* annie's youtubeDownload
+func youtubeDownload(uri string) downloader.VideoData {
+vid := utils.MatchOneOf(
+		uri,
+		`watch\?v=([^/&]+)`,
+		`youtu\.be/([^?/]+)`,
+		`embed/([^/?]+)`,
+		`v/([^/?]+)`,
+)
+-- regexp on uri
+-- vid != nil && len(vid) > 0
+videoURL := fmt.Sprintf(
+		"https://www.youtube.com/watch?v=%s&gl=US&hl=en&has_verified=1&bpctr=9999999999",
+		vid[1],
+	)
+-- decoration
+
+html := request.Get(videoURL, referer)
+ytplayer := utils.MatchOneOf(html, `;ytplayer\.config\s*=\s*({.+?});`)[1]
+-- HTTP request and regexp
+
+var youtube youtubeData
+	json.Unmarshal([]byte(ytplayer), &youtube)
+	title := youtube.Args.Title
+	streams := strings.Split(youtube.Args.Stream, ",")
+-- regexp
+
+
+*/
+
+/*
+youtubeData grammar
+
+*/
