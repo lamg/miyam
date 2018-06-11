@@ -1,6 +1,7 @@
 package miyam
 
 import (
+	"fmt"
 	"io/ioutil"
 	h "net/http"
 	"regexp"
@@ -16,92 +17,66 @@ import (
 // or a video URL
 
 type siteExtractor struct {
-	client     *h.Client
-	urlMatcher *regexp.Regexp
-	titleP     *htmlProc
-	urlP       *htmlProc
+	prs []*dataProc
 }
 
-func (s *siteExtractor) match(url string) (ok bool) {
-	ok = s.urlMatcher.MatchString(url)
+func (s *siteExtractor) extract(url string,
+	c *h.Client) (v *videoInfo, e error) {
+	s.prs[0].inpTxt = url
+
 	return
 }
 
-func (s *siteExtractor) extract(url string) (v *videoInfo,
-	e error) {
-	v = new(videoInfo)
-	var ss []string
-	ss, e = s.titleP.proc(s.client, url)
+// YouTube exctractor
+// video ID, from matched URL
+// decorated ID as URL
+// youtube player, from matched content, got from decorated
+//  URL
+// title matched from youtube player
+// streams matched from youtube player
+
+type dataProc struct {
+	inpTxt string //textual data
+	inpURL string //for getting the data from the web if inpTxt
+	// is ""
+	rgs       []*regexp.Regexp
+	decorator string
+	// decorator for matched text
+}
+
+// cl: client for getting inpURL content
+func (d *dataProc) proc(cl *h.Client) (r []string, e error) {
+	if d.inpTxt == "" {
+	} else {
+		var p *h.Response
+		p, e = cl.Get(d.inpURL)
+		var bs []byte
+		if e == nil {
+			bs, e = ioutil.ReadAll(p.Body)
+		}
+		if e == nil {
+			d.inpTxt = string(bs)
+		}
+	}
+	var sm []string // submatch selected result
 	if e == nil {
-		if len(ss) == 1 {
-			v.title = ss[0]
+		var sms []string // string submatch results
+		for i := 0; sms == nil && i != len(d.rgs); i++ {
+			sms = d.rgs[i].FindStringSubmatch(d.inpTxt)
+		}
+		if len(sms) > 1 {
+			sm = sms[1]
+			// sm is the content of the first submatch group
 		} else {
-			e = NoTitleFound(url)
+			e = NoMatch(d.inpTxt)
 		}
 	}
-	v.urls, e = s.urlP.proc(s.client, url)
-	return
-}
-
-type htmlProc struct {
-	rs []*regexp.Regexp
-}
-
-func (p *htmlProc) proc(c *h.Client, url string) (us []string,
-	e error) {
-	var r *h.Response
-	r, e = c.Get(url)
-	var bs []byte
 	if e == nil {
-		bs, e = ioutil.ReadAll(r.Body)
-	}
-	if e == nil {
-		html := string(bs)
-		i, ok := 0, false
-		us = make([]string, 0)
-		for !ok && i != len(p.rs) {
-			ss := p.rs[i].FindStringSubmatch(html)
-			ok = ss != nil
-			if ok {
-
-			}
+		if d.decorator != "" {
+			r = fmt.Sprintf(d.decorator, sm...)
+		} else {
+			r = sm
 		}
-
 	}
 	return
 }
-
-/* annie's youtubeDownload
-func youtubeDownload(uri string) downloader.VideoData {
-vid := utils.MatchOneOf(
-		uri,
-		`watch\?v=([^/&]+)`,
-		`youtu\.be/([^?/]+)`,
-		`embed/([^/?]+)`,
-		`v/([^/?]+)`,
-)
--- regexp on uri
--- vid != nil && len(vid) > 0
-videoURL := fmt.Sprintf(
-		"https://www.youtube.com/watch?v=%s&gl=US&hl=en&has_verified=1&bpctr=9999999999",
-		vid[1],
-	)
--- decoration
-
-html := request.Get(videoURL, referer)
-ytplayer := utils.MatchOneOf(html, `;ytplayer\.config\s*=\s*({.+?});`)[1]
--- HTTP request and regexp
-
-var youtube youtubeData
-	json.Unmarshal([]byte(ytplayer), &youtube)
-	title := youtube.Args.Title
-	streams := strings.Split(youtube.Args.Stream, ",")
--- regexp
-
-
-*/
-
-/*
-youtubeData grammar
-
-*/
