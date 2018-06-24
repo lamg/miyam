@@ -1,10 +1,9 @@
 package miyam
 
 import (
-	"encoding/json"
 	"io/ioutil"
+	h "net/http"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,37 +13,25 @@ func TestInfo(t *testing.T) {
 	bs, e := ioutil.ReadFile("youtube_player_line.json")
 	require.NoError(t, e)
 	testHTML := string(bs)
-	var ytplayer string
-	ytplayer, e = matchOneOf(testHTML,
-		`;ytplayer\.config\s*=\s*({.+?});`)
+	var ps *parsed
+	ps, e = parse(testHTML)
 	require.NoError(t, e)
-	yd := new(youtubeData)
-	e = json.Unmarshal([]byte(ytplayer), yd)
-	require.NoError(t, e)
-	d := &VideoData{
-		Site:  "YouTube",
-		Title: yd.Args.Title,
-	}
-	require.Equal(t, d.Title, "Eliécer Ávila   El régimen no puede"+
+	require.Equal(t, ps.title, "Eliécer Ávila   El régimen no puede"+
 		" controlar a ese potro salvaje que es Internet  720p")
 
-	fs := make(map[string]FormatData)
-	streams := append(strings.Split(yd.Args.Stream, ","),
-		strings.Split(yd.Args.Audio, ",")...)
-	for i := 0; e == nil && i != len(streams); i++ {
-		var stream url.Values
-		stream, e = url.ParseQuery(streams[i])
-		var fm FormatData
-		if e == nil {
-			fm.Quality = stream.Get("quality")
-			fm.Ext, e = matchOneOf(stream.Get("type"),
-				`video/([[:word:]]+);`, `audio/([[:word:]]+)`)
-		}
-		if e == nil {
-			fm.URL = stream.Get("url")
-			itag := stream.Get("itag")
-			fs[itag] = fm
-		}
+	var fp map[string]fmPart
+	fp, e = extract(ps)
+	require.NoError(t, e)
+	require.Equal(t, 6, len(fp))
+
+	d := &VideoData{
+		Site:  "YouTube",
+		Title: ps.title,
+		Type:  "video",
 	}
-	require.Equal(t, 5, len(fs))
+	d.Formats, e = fillFormatInfo(fp, make(map[string][]string),
+		h.DefaultClient)
+	require.NotNil(t, d.Formats)
+	_, ok := e.(*url.Error)
+	require.True(t, ok)
 }

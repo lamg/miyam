@@ -3,42 +3,11 @@ package miyam
 import (
 	"fmt"
 	"log"
-	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 )
-
-func (y *YouTube) genSignedURL(url, assets string,
-	v url.Values) (r string, e error) {
-	if strings.Contains(url, "signature=") {
-		r = url
-	} else {
-		sig := v.Get("sig")
-		if sig == "" {
-			s := v.Get("s")
-			sig, e = y.decryptSign(s, assets)
-		}
-		r = fmt.Sprintf("%s&signature=%s", url, sig)
-	}
-	return
-}
-
-func (y *YouTube) decryptSign(sig, assets string) (r string,
-	e error) {
-	r = fmt.Sprintf("https://www.youtube.com%s", assets)
-	tokens, ok := y.tokensCache[r]
-	if !ok {
-		// TODO
-		var html string
-		html, e = y.page(r)
-		tokens = signTokens(html)
-		y.tokensCache[r] = tokens
-	}
-	r = decipher(tokens, sig)
-	return
-}
 
 func decipher(tokens []string, sig string) (r string) {
 	var pos int

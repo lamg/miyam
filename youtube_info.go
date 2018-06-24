@@ -1,13 +1,9 @@
 package miyam
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	h "net/http"
-	"net/url"
 	"regexp"
-	"strings"
 )
 
 // VideoData data struct of video info
@@ -18,6 +14,12 @@ type VideoData struct {
 	// each format has it's own URLs and Quality
 	Formats map[string]FormatData
 }
+
+const (
+	// DefaultKey is the VideoData.Formats key associated to
+	// the defaul FormatData
+	DefaultKey = "default"
+)
 
 // FormatData data struct of every format
 type FormatData struct {
@@ -38,92 +40,53 @@ type YouTube struct {
 
 // Get gets the download information of a YouTube video
 func (y *YouTube) Get(ur string) (d *VideoData, e error) {
-	var id string
-	id, e = matchOneOf(
-		ur,
-		`watch\?v=([^/&]+)`,
-		`youtu\.be/([^?/]+)`,
-		`embed/([^/?]+)`,
-		`v/([^/?]+)`,
-	)
+	var vurl string
+	vurl, e = decorate(ur)
 	var html string
 	if e == nil {
-		vurl := fmt.Sprintf(
-			"https://www.youtube.com/watch?v=%s&gl=US&hl=en"+
-				"&has_verified=1&bpctr=9999999999",
-			id,
-		)
-		html, e = y.page(vurl)
+		html, e = page(vurl, y.Cl)
 	}
-	var ytplayer string
+	var ps *parsed
 	if e == nil {
-		ytplayer, e = matchOneOf(html,
-			`;ytplayer\.config\s*=\s*({.+?});`)
+		ps, e = parse(html)
 	}
-	var yd *youtubeData
+	var fp map[string]fmPart
 	if e == nil {
-		yd = new(youtubeData)
-		e = json.Unmarshal([]byte(ytplayer), yd)
+		fp, e = extract(ps)
 	}
 	if e == nil {
-		d = &VideoData{
-			Site:  "YouTube",
-			Title: yd.Args.Title,
-		}
-		d.Formats, e = y.extractURLs(yd, ur)
+		d.Site = "YouTube"
+		d.Title = ps.title
+		d.Type = "video"
+		d.Formats, e = fillFormatInfo(fp, y.tokensCache, y.Cl)
 	}
 	return
 }
 
-func (y *YouTube) extractURLs(yd *youtubeData,
-	ur string) (fs map[string]FormatData, e error) {
-	// TODO extract audio URLs
-	streams := append(strings.Split(yd.Args.Stream, ","),
-		strings.Split(yd.Args.Audio, ",")...)
-
-	fs = make(map[string]FormatData)
-	for i := 0; e == nil && i != len(streams); i++ {
-		var stream url.Values
-		stream, e = url.ParseQuery(streams[i])
-		var fm FormatData
-		if e == nil {
-			fm.Quality = stream.Get("quality")
-			fm.Ext, e = matchOneOf(stream.Get("type"),
-				`video/([[:word:]]+);`, `audio/([[:word:]]+)`)
-		}
-		if e == nil {
-			streamURL := stream.Get("url")
-			fm.URL, e = y.genSignedURL(streamURL, yd.Assets.JS, stream)
-		}
-		if e == nil {
-			fm.Size, e = y.size(fm.URL)
-		}
-		if e == nil {
-			itag := stream.Get("itag")
-			fs[itag] = fm
-		}
-	}
-	return
+type parsed struct {
+	title   string
+	streams []string
+	js      string
 }
 
-const (
-	referrer      = "https://youtube.com"
-	headReferer   = "Referer"
-	contentLength = "Content-Length"
-)
+type fmPart struct {
+	quality string
+	ext     string
+	itag    string
+	sign    *signInfo
+	// data structure preprocess genSigned
+}
 
-func (y *YouTube) size(ur string) (r uint64, e error) {
-	var req *h.Request
-	req, e = h.NewRequest(h.MethodHead, ur, nil)
-	var res *h.Response
-	if e == nil {
-		req.Header.Set(headReferer, referrer)
-		res, e = y.Cl.Do(req)
-	}
-	if e == nil {
-		r = uint64(res.ContentLength)
-	}
-	return
+type signInfo struct {
+	// shared between pre-execution and post-execution
+	// of input/output
+	valuesS string
+	// input/output parameter
+	tokensURL string
+	// input/output result
+	html string
+	// return value
+	signedURL string
 }
 
 type youtubeData struct {
@@ -139,25 +102,6 @@ type args struct {
 
 type assets struct {
 	JS string `json:"js"`
-}
-
-func (y *YouTube) page(ur string) (r string, e error) {
-	var rq *h.Request
-	rq, e = h.NewRequest(h.MethodGet, ur, nil)
-	var res *h.Response
-	if e == nil {
-		rq.Header.Set(headReferer, referrer)
-		res, e = y.Cl.Do(rq)
-	}
-	var bs []byte
-	if e == nil {
-		bs, e = ioutil.ReadAll(res.Body)
-		res.Body.Close()
-	}
-	if e == nil {
-		r = string(bs)
-	}
-	return
 }
 
 // matchOneOf match one of the regular expressions in rs
