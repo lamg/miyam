@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/afero"
 )
 
+// BarSeeker represents progress bar status
 type BarSeeker struct {
 	Offset uint64
 	Total  uint64
@@ -21,7 +22,7 @@ type downloader struct {
 	fs     afero.Fs
 }
 
-func (m *downloader) download(dest io.WriteCloser,
+func (m *downloader) copy(dest io.WriteCloser,
 	src io.ReadCloser) (e error) {
 	wr := io.MultiWriter(dest, m.barWr)
 	_, e = io.Copy(wr, src)
@@ -52,7 +53,7 @@ func (m *downloader) storer(path string) (dest io.WriteCloser,
 		offset = uint64(fi.Size())
 		if offset != 0 {
 			// open for appending
-			dest, e = m.fs.OpenFile(path, 0644, os.O_APPEND|os.O_WRONLY)
+			dest, e = m.fs.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
 		} else {
 			dest, e = m.fs.Create(path)
 		}
@@ -60,7 +61,7 @@ func (m *downloader) storer(path string) (dest io.WriteCloser,
 	return
 }
 
-func (m *downloader) downloadURL(url, path string) (e error) {
+func (m *downloader) download(url, path string) (e error) {
 	var dest io.WriteCloser
 	var offset, total uint64
 	dest, offset, e = m.storer(path)
@@ -70,7 +71,7 @@ func (m *downloader) downloadURL(url, path string) (e error) {
 	}
 	if e == nil {
 		m.barSk.Offset, m.barSk.Total = offset, total
-		e = m.download(dest, src)
+		e = m.copy(dest, src)
 	}
 	return
 }
