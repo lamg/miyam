@@ -36,7 +36,15 @@ func (m *downloader) get(url string,
 	r, e = m.client.Do(rq)
 	if e == nil {
 		src, total = r.Body, uint64(r.ContentLength)
+		if offset >= total {
+			e = alreadyDownloaded()
+		}
 	}
+	return
+}
+
+func alreadyDownloaded() (e error) {
+	e = fmt.Errorf("Already downloaded")
 	return
 }
 
