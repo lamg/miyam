@@ -127,6 +127,8 @@ func fillFormatInfo(fp map[string]fmPart, tkC map[string][]string,
 const (
 	referrer    = "https://youtube.com"
 	headReferer = "Referer"
+	userAgentV  = "Mozilla/5.0 (Linux; Android 7.0; SM-G930VC Build/NRD90M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.83 Mobile Safari/537.36"
+	userAgentK  = "User-Agent"
 )
 
 func page(ur string, c *h.Client) (r string, e error) {
@@ -135,6 +137,7 @@ func page(ur string, c *h.Client) (r string, e error) {
 	var res *h.Response
 	if e == nil {
 		rq.Header.Set(headReferer, referrer)
+		rq.Header.Set(userAgentK, userAgentV)
 		res, e = c.Do(rq)
 	}
 	var bs []byte
@@ -150,10 +153,11 @@ func page(ur string, c *h.Client) (r string, e error) {
 
 func size(ur string, c *h.Client) (r uint64, e error) {
 	var req *h.Request
-	req, e = h.NewRequest(h.MethodHead, ur, nil)
+	req, e = h.NewRequest(h.MethodGet, ur, nil)
 	var res *h.Response
 	if e == nil {
 		req.Header.Set(headReferer, referrer)
+		req.Header.Set(userAgentK, userAgentV)
 		res, e = c.Do(req)
 	}
 	if e == nil {

@@ -50,6 +50,7 @@ func report(e error) {
 		_, ok := e.(*url.Error)
 		if ok {
 			fmt.Fprintln(os.Stderr, "No network connection")
+			println(e.Error())
 		} else {
 			fmt.Fprintln(os.Stderr, e.Error())
 		}
