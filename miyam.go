@@ -24,7 +24,9 @@ type Miyam struct {
 // NewMiyam returns a new Miyam instance
 func NewMiyam(proxy string, timeout time.Duration) (m *Miyam) {
 	m = new(Miyam)
-	tr := new(h.Transport)
+	tr := &h.Transport{
+		TLSHandshakeTimeout: timeout,
+	}
 	if proxy != "" {
 		ur, _ := url.Parse(proxy)
 		tr.Proxy = func(r *h.Request) (u *url.URL, e error) {
@@ -58,16 +60,16 @@ func (m *Miyam) DownloadTerm(ur, itag string) (e error) {
 			fm = vd.Formats[DefaultKey]
 		} else {
 			fm, ok = vd.Formats[itag]
-		}
-		if !ok {
-			e = noItag(itag)
+			if !ok {
+				e = noItag(itag)
+			}
 		}
 	}
 
 	var dest io.WriteCloser
 	var offset, total uint64
 	if e == nil {
-		ds := destFile(vd.Title)
+		ds := destFile(vd.Title, fm.Ext)
 		dest, offset, e = m.dwn.storer(ds)
 	}
 	var src io.ReadCloser
@@ -114,7 +116,7 @@ func noItag(itag string) (e error) {
 	return
 }
 
-func destFile(title string) (f string) {
+func destFile(title, ext string) (f string) {
 	var repChs []string
 	if runtime.GOOS == "windows" {
 		repChs = []string{"\"", " ", "?", " ", "*", " ",
@@ -124,6 +126,6 @@ func destFile(title string) (f string) {
 			"："}
 	}
 	rep := strings.NewReplacer(repChs...)
-	f = rep.Replace(title)
+	f = rep.Replace(title + "." + ext)
 	return
 }

@@ -55,9 +55,11 @@ func (y *YouTube) Get(ur string) (d *VideoData, e error) {
 		fp, e = extract(ps)
 	}
 	if e == nil {
-		d.Site = "YouTube"
-		d.Title = ps.title
-		d.Type = "video"
+		d = &VideoData{
+			Site:  "YouTube",
+			Title: ps.title,
+			Type:  "video",
+		}
 		d.Formats, e = fillFormatInfo(fp, y.tokensCache, y.Cl)
 	}
 	return

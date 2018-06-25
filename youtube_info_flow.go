@@ -127,8 +127,9 @@ func fillFormatInfo(fp map[string]fmPart, tkC map[string][]string,
 const (
 	referrer    = "https://youtube.com"
 	headReferer = "Referer"
-	userAgentV  = "Mozilla/5.0 (Linux; Android 7.0; SM-G930VC Build/NRD90M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.83 Mobile Safari/537.36"
-	userAgentK  = "User-Agent"
+	userAgentV  = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) " +
+		"Gecko/20100101 Firefox/53.0.1"
+	userAgentK = "User-Agent"
 )
 
 func page(ur string, c *h.Client) (r string, e error) {

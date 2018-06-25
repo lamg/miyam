@@ -11,17 +11,18 @@ import (
 )
 
 func main() {
-	var info bool
+	var info, verbose bool
 	var itag string
 	var timeout time.Duration
 	var attempts uint
 	flag.BoolVar(&info, "i", false,
 		"Get information about available formats")
-	flag.DurationVar(&timeout, "t", 5*time.Second,
+	flag.DurationVar(&timeout, "t", 30*time.Second,
 		"Timeout for client")
 	flag.StringVar(&itag, "f", "", "Selected video format tag")
 	flag.UintVar(&attempts, "a", 1,
 		"Number of attempts for getting the whole file")
+	flag.BoolVar(&verbose, "v", false, "Verbose output")
 	flag.Parse()
 	proxy := os.Getenv("http_proxy")
 	if proxy == "" {

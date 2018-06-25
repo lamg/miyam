@@ -48,9 +48,9 @@ func (m *downloader) storer(path string) (dest io.WriteCloser,
 		if offset != 0 {
 			// open for appending
 			dest, e = m.fs.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
-		} else {
-			dest, e = m.fs.Create(path)
 		}
+	} else {
+		dest, e = m.fs.Create(path)
 	}
 	return
 }
