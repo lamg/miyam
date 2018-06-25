@@ -12,7 +12,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/spf13/afero"
 
-	"github.com/cheggaaa/pb"
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // Miyam program interface
