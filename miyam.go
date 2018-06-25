@@ -25,8 +25,8 @@ type Miyam struct {
 func NewMiyam(proxy string, timeout time.Duration) (m *Miyam) {
 	m = new(Miyam)
 	tr := new(h.Transport)
-	ur, _ := url.Parse(proxy)
-	if ur != nil {
+	if proxy != "" {
+		ur, _ := url.Parse(proxy)
 		tr.Proxy = func(r *h.Request) (u *url.URL, e error) {
 			u = ur
 			return
