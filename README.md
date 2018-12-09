@@ -1,6 +1,9 @@
+# Miyam video downloader
 
-# TODO
-- [ ] test audio URLs extraction
-- [x] command line interface
-- [ ] slower than annie
-- [ ] incomplete information extracted
+## TODO
+- initialize 
+	- miyam.alts
+	- miyam.nc
+	- miyam.dc
+	- miyam.nrc
+	- miyam.fwc
